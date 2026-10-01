@@ -1,0 +1,26 @@
+# render.yaml
+# Render "Blueprint" file — lets you spin up BOTH the web service and the
+# PostgreSQL database in one step via "New +" > "Blueprint" on Render,
+# instead of creating each resource manually in the dashboard.
+# This is optional for the course: you can show students the manual
+# dashboard flow first, then reveal this file as the "infrastructure as
+# code" shortcut.
+
+services:
+  - type: web
+    name: render-demo-app
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: render-demo-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+
+databases:
+  - name: render-demo-db
+    plan: free
