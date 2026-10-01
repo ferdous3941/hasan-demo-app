@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Render Demo — Todo List</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 560px;
+    margin: 60px auto;
+    padding: 0 20px;
+    background: #f7f7f8;
+    color: #1a1a1a;
+  }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  p.subtitle { color: #666; margin-top: 0; font-size: 0.9rem; }
+  form { display: flex; gap: 8px; margin: 20px 0; }
+  input[type="text"] {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+  button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #5b5bd6;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  button:hover { background: #4a4ac2; }
+  ul { list-style: none; padding: 0; }
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  li.completed span { text-decoration: line-through; color: #999; }
+  li span { flex: 1; }
+  li button.delete { background: #e5484d; padding: 6px 10px; font-size: 0.85rem; }
+  li button.delete:hover { background: #c9302c; }
+  #status { font-size: 0.85rem; color: #999; margin-top: 20px; }
+</style>
+</head>
+<body>
+  <h1>🚀 Render Demo — Todo List</h1>
+  <p class="subtitle">Node.js + Express + PostgreSQL, deployed on Render</p>
+
+  <form id="todo-form">
+    <input type="text" id="title" placeholder="What needs to be done?" required />
+    <button type="submit">Add</button>
+  </form>
+
+  <ul id="todo-list"></ul>
+  <div id="status">Loading...</div>
+
+  <script>
+    const listEl = document.getElementById('todo-list');
+    const statusEl = document.getElementById('status');
+    const formEl = document.getElementById('todo-form');
+    const titleInput = document.getElementById('title');
+
+    async function fetchTodos() {
+      statusEl.textContent = 'Loading...';
+      try {
+        const res = await fetch('/api/todos');
+        const todos = await res.json();
+        renderTodos(todos);
+        statusEl.textContent = `${todos.length} item(s) — connected to database ✅`;
+      } catch (err) {
+        statusEl.textContent = 'Failed to load todos. Check server/database connection.';
+      }
+    }
+
+    function renderTodos(todos) {
+      listEl.innerHTML = '';
+      todos.forEach((todo) => {
+        const li = document.createElement('li');
+        li.className = todo.completed ? 'completed' : '';
+
+        const span = document.createElement('span');
+        span.textContent = todo.title;
+        span.onclick = () => toggleTodo(todo.id);
+        span.style.cursor = 'pointer';
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.className = 'delete';
+        delBtn.onclick = () => deleteTodo(todo.id);
+
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        listEl.appendChild(li);
+      });
+    }
+
+    async function toggleTodo(id) {
+      await fetch(`/api/todos/${id}/toggle`, { method: 'PATCH' });
+      fetchTodos();
+    }
+
+    async function deleteTodo(id) {
+      await fetch(`/api/todos/${id}`, { method: 'DELETE' });
+      fetchTodos();
+    }
+
+    formEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = titleInput.value.trim();
+      if (!title) return;
+      await fetch('/api/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+      titleInput.value = '';
+      fetchTodos();
+    });
+
+    fetchTodos();
+  </script>
+</body>
+</html>
